@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 const [base, trip, from, to, date] = process.argv.slice(2);
 assert.ok(base && trip && from && to && date, 'Usage: node staging-perf.mjs BASE TRIP FROM TO YYYY-MM-DD');
-const root = new URL('/rail-api/public/', base);
+const root = new URL(process.env.SHANRAIL_PERF_API_PREFIX ?? '/rail-api/public/', base);
 const segment = new URLSearchParams({ from, to });
 const searchUrl = new URL('trips?' + new URLSearchParams({ from, to, date }), root);
 const coachesUrl = new URL('trips/' + trip + '/coaches?' + segment, root);

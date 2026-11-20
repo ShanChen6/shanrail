@@ -2,10 +2,13 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { execFile, spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { setTimeout as delay } from 'node:timers/promises';
+import { promisify } from 'node:util';
 import pg from 'pg';
+
+const exec = promisify(execFile);
 
 const { DATABASE_URL, SHANRAIL_SEED_PASSWORD } = process.env;
 assert.ok(DATABASE_URL && SHANRAIL_SEED_PASSWORD, 'Run migrations and demo seed first');
@@ -117,6 +120,23 @@ async function verifyScheduling(token) {
         index === route.stops.length - 1 ? null : `${followingDay}T0${index}:10+07:00`,
     }));
     const input = { code: `T${direction}-${fixture}`, routeId: route.id, coachTemplateIds: [coach.id, coach.id], stops };
+    if (direction === 0 && process.env.CI === 'true') {
+      const largeCoach = await json('coach-templates', 'POST', {
+        code: 'PERF-' + fixture, name: 'Toa thử tải',
+        places: Array.from({ length: 50 }, (_, index) => ({
+          label: String(index + 1).padStart(2, '0'), kind: 'SEAT',
+        })),
+      }, 201);
+      const largeTrip = await json('trips', 'POST', {
+        ...input, code: 'PERF-' + fixture, coachTemplateIds: Array(10).fill(largeCoach.id),
+      }, 201);
+      await json('trips/' + largeTrip.id + '/publish', 'POST', undefined, 201);
+      const { stdout } = await exec(process.execPath, [
+        'scripts/staging-perf.mjs', `http://127.0.0.1:${port}`, largeTrip.id,
+        stops[1].stationId, stops[2].stationId, followingDay,
+      ], { env: { ...process.env, SHANRAIL_PERF_API_PREFIX: '/public/' }, timeout: 60000 });
+      console.log('CI rehearsal (direct API, 500 places):\n%s', stdout.trim());
+    }
     const swappedIds = stops.map((stop) => stop.stationId);
     [swappedIds[1], swappedIds[2]] = [swappedIds[2], swappedIds[1]];
     await json('trips', 'POST', {
