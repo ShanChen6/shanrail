@@ -129,5 +129,23 @@ async function verifyScheduling(token) {
     await json('coach-templates/' + coach.id, 'PUT', { ...coachInput, name: 'Toa đã sửa' }, 200);
     const afterEdit = await json('trips/' + trip.id, 'GET', undefined, 200);
     assert.deepEqual(afterEdit.coaches, detail.coaches);
+    const search = async (from, to, date) => {
+      const query = new URLSearchParams({ from, to, date });
+      const response = await request('/public/trips?' + query);
+      assert.equal(response.status, 200);
+      return response.json();
+    };
+    const from = route.stops[1].stationId;
+    const to = route.stops[2].stationId;
+    const matched = (await search(from, to, followingDay)).find((item) => item.id === trip.id);
+    assert.ok(matched);
+    const km = route.stops[2].distanceKm - route.stops[1].distanceKm;
+    assert.equal(matched.distanceKm, km);
+    assert.deepEqual(matched.fares, [
+      { kind: 'SEAT', amountVnd: km * 900 }, { kind: 'BERTH', amountVnd: km * 1500 },
+    ]);
+    assert.ok(!(await search(from, to, futureDay)).some((item) => item.id === trip.id));
+    assert.ok(!(await search(to, from, followingDay)).some((item) => item.id === trip.id));
+
   }
 }

@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Database } from './database.js';
+import { TripSearchController } from './trip-search.js';
 import { AdminSchedule, AdminScheduleController } from './admin-schedule.js';
 import { AuthController, RoleGuard, SessionGuard, AuthorizationController } from './auth.js';
 
@@ -28,7 +29,7 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, AuthController, AuthorizationController, AdminScheduleController],
+  controllers: [HealthController, AuthController, AuthorizationController, AdminScheduleController, TripSearchController],
   providers: [Database, SessionGuard, RoleGuard, AdminSchedule],
 })
 class AppModule {}

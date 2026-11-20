@@ -1,5 +1,6 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import TripSearch from './trip-search';
 
 export default function HomePage() {
   return (
@@ -12,8 +13,9 @@ export default function HomePage() {
       <section aria-labelledby="page-title">
         <div className="route" aria-hidden="true"><span /><span /><span /></div>
         <h1 id="page-title">Vé tàu hỏa</h1>
-        <p>Shanrail đang chuẩn bị tính năng tìm chuyến và đặt vé.</p>
+        <p>Tìm chuyến và xem giá vé theo chặng.</p>
       </section>
+      <TripSearch />
     </main>
   );
 }

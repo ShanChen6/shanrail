@@ -32,3 +32,40 @@ p { line-height: 1.6; }
 }
 
 .admin-link { margin-left: auto; color: inherit; font-size: .95rem; }
+
+.trip-search { margin: 1.5rem 0 3rem; }
+.trip-search fieldset {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  align-items: end;
+  gap: .75rem;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.trip-search label { display: grid; gap: .35rem; font-weight: 600; }
+.trip-search select, .trip-search input, .trip-search button {
+  padding: .7rem;
+  font: inherit;
+  color: inherit;
+  background: white;
+  border-radius: .5rem;
+  border: 1px solid #619483;
+  min-width: 0;
+}
+.trip-search button { color: white; background: #0a473c; cursor: pointer; }
+.trip-search button:disabled { opacity: .55; cursor: default; }
+.trip-results { display: grid; gap: .75rem; list-style: none; padding: 0; }
+.trip-results li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .75rem 2rem;
+  background: white;
+  padding: 1rem;
+  border: 1px solid #b6d3c8;
+  border-radius: .75rem;
+}
+.trip-results p { margin: .35rem 0 0; }
+.trip-results dl { display: flex; gap: 1.25rem; flex-wrap: wrap; margin: 0; }
+.trip-results dd { margin: 0; font-weight: 750; }

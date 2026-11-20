@@ -45,3 +45,9 @@ Mở [bảng quản trị local](http://localhost:3000/admin) và đăng nhập 
 Mặc định web chuyển tiếp các yêu cầu quản trị đến API tại `http://127.0.0.1:3001`. Nếu đổi cổng API, đặt `SHANRAIL_API_URL` khi chạy hoặc build web.
 
 API cần token Bearer có quyền quản trị. `GET`, `POST` và `PUT /admin/{stations,routes,coach-templates}` quản lý danh mục (PUT có thêm `/:id`). `POST /admin/trips` nhận `code`, `routeId`, `coachTemplateIds` theo thứ tự toa và `stops` theo đúng thứ tự ga của tuyến. Mỗi điểm dừng có `stationId`, `arrivalAt` và `departureAt` dạng ISO 8601 có múi giờ. Điểm đầu chỉ có giờ đi, điểm cuối chỉ có giờ đến. Dùng `GET /admin/trips/:id` xem chi tiết và `POST /admin/trips/:id/publish` để mở bán chuyến chưa khởi hành. Chuyến lưu bản sao thứ tự ga, số km và cấu hình chỗ theo từng toa.
+
+## Tìm chuyến và xem giá (SR-004)
+
+Trang chủ lấy ga từ `GET /public/stations` và gọi `GET /public/trips?from=<uuid>&to=<uuid>&date=YYYY-MM-DD`. Khách có thể tìm mà không cần đăng nhập. Kết quả lấy ngày theo giờ Việt Nam tại ga lên tàu, kể cả khi chuyến rời ga đầu từ hôm trước. API chỉ trả chuyến đã mở bán, còn giờ lên tàu và đi đúng chiều đã chọn.
+
+Giá mỗi hạng bằng số km của chặng nhân đơn giá VND/km lưu trên chuyến. Đơn giá mẫu là 900 cho ghế và 1.500 cho giường. Kết quả chỉ hiển thị các hạng có cấu hình trên chuyến. Sau khi chạy migration mới, tạo và mở bán một chuyến trong trang quản trị để có dữ liệu tra cứu.
