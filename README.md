@@ -8,11 +8,14 @@ Cần Node.js 24, pnpm 11.18.0 và Docker Compose.
 
 ```sh
 cp .env.example .env
+# Điền POSTGRES_PASSWORD và thay <local-password> trong DATABASE_URL.
 pnpm install --frozen-lockfile
 docker compose up -d --wait
 pnpm --filter @shanrail/api build
 pnpm --filter @shanrail/api start
 ```
+
+Với database local mới, dùng cùng một mật khẩu ngẫu nhiên dạng hex cho cả hai biến. Với volume PostgreSQL đã có dữ liệu, điền mật khẩu hiện tại của database. Biến Compose chỉ đặt mật khẩu khi khởi tạo volume mới.
 
 Mở terminal thứ hai và chạy `pnpm --filter @shanrail/web dev`. Web chạy tại http://localhost:3000. API mặc định dùng cổng 3001. Có thể thay `API_PORT` trong `.env` nếu đang chạy Shancine.
 
