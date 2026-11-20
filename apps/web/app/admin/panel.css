@@ -1,0 +1,19 @@
+.admin h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
+.admin a { color: inherit; font-weight: 750; }
+.admin nav, .admin-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-block: 1rem; }
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: 2rem; }
+.admin-form { max-width: 35rem; }
+.admin-form fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.admin label { display: grid; gap: .35rem; margin: .8rem 0; }
+.admin input, .admin select, .admin textarea, .admin button {
+  font: inherit; color: inherit; padding: .55rem .7rem; border: 1px solid #619483; border-radius: .4rem; background: #fff;
+}
+.admin button { cursor: pointer; }
+.admin button[aria-pressed="true"], .admin form button[type="submit"], .admin form button:not([type]) {
+  background: #0a473c; color: #fff;
+}
+.admin button:disabled { opacity: .55; cursor: wait; }
+.admin-items { list-style: none; padding: 0; }
+.admin-items li { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-bottom: 1px solid #b6d3c8; padding: .65rem 0; }
+.admin-stop { padding: .6rem; border-left: 2px solid #619483; margin-bottom: .7rem; }
+.admin .error { color: #a02020; }

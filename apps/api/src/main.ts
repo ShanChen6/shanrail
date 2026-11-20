@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Database } from './database.js';
+import { AdminSchedule, AdminScheduleController } from './admin-schedule.js';
 import { AuthController, RoleGuard, SessionGuard, AuthorizationController } from './auth.js';
 
 @Controller('health')
@@ -26,7 +27,10 @@ class HealthController {
   }
 }
 
-@Module({ controllers: [HealthController, AuthController, AuthorizationController], providers: [Database, SessionGuard, RoleGuard] })
+@Module({
+  controllers: [HealthController, AuthController, AuthorizationController, AdminScheduleController],
+  providers: [Database, SessionGuard, RoleGuard, AdminSchedule],
+})
 class AppModule {}
 
 async function bootstrap() {

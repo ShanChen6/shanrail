@@ -37,3 +37,11 @@ Sau khi PostgreSQL chạy, dùng `pnpm db:migrate`. Lệnh này có thể chạy
 Tài khoản mẫu gồm `customer@example.test`, `admin@example.test` và `inspector@example.test`. Hai tuyến demo có cùng năm ga theo thứ tự ngược nhau. Khoảng cách trong seed dùng để kiểm thử nghiệp vụ.
 
 Gửi email và mật khẩu tới `POST /auth/login` dưới dạng JSON. API trả token Bearer có hạn 8 giờ cho `GET /auth/me`, `POST /auth/logout` và các endpoint theo vai trò. `GET /access/admin` và `GET /access/inspection` kiểm tra phân quyền. Truy cập không có phiên hợp lệ trả 401. Sai vai trò trả 403.
+
+## Quản trị lịch tàu (SR-003)
+
+Mở [bảng quản trị local](http://localhost:3000/admin) và đăng nhập bằng tài khoản admin mẫu. Dùng các tab **Ga**, **Tuyến** và **Mẫu toa** để tạo hoặc sửa danh mục. Ở tab **Chuyến tàu**, chọn tuyến, nhập mã mẫu toa theo thứ tự, điền giờ đến/đi theo giờ Việt Nam, lưu bản nháp rồi chọn **Mở bán**. Khi chuyến qua nửa đêm, chọn ngày kế tiếp cho các mốc tương ứng.
+
+Mặc định web chuyển tiếp các yêu cầu quản trị đến API tại `http://127.0.0.1:3001`. Nếu đổi cổng API, đặt `SHANRAIL_API_URL` khi chạy hoặc build web.
+
+API cần token Bearer có quyền quản trị. `GET`, `POST` và `PUT /admin/{stations,routes,coach-templates}` quản lý danh mục (PUT có thêm `/:id`). `POST /admin/trips` nhận `code`, `routeId`, `coachTemplateIds` theo thứ tự toa và `stops` theo đúng thứ tự ga của tuyến. Mỗi điểm dừng có `stationId`, `arrivalAt` và `departureAt` dạng ISO 8601 có múi giờ. Điểm đầu chỉ có giờ đi, điểm cuối chỉ có giờ đến. Dùng `GET /admin/trips/:id` xem chi tiết và `POST /admin/trips/:id/publish` để mở bán chuyến chưa khởi hành. Chuyến lưu bản sao thứ tự ga, số km và cấu hình chỗ theo từng toa.

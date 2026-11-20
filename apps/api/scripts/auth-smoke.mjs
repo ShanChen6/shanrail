@@ -59,6 +59,8 @@ try {
     assert.equal(profile.status, 200);
     assert.deepEqual(await profile.json(), account);
     assert.equal((await request('/access/admin', token)).status, role === 'ADMIN' ? 200 : 403);
+    assert.equal((await request('/admin/stations', token)).status, role === 'ADMIN' ? 200 : 403);
+    if (role === 'ADMIN') await verifyScheduling(token);
     assert.equal((await request('/access/inspection', token)).status, role === 'INSPECTOR' ? 200 : 403);
     assert.equal((await request('/auth/logout', token, { method: 'POST' })).status, 204);
     assert.equal((await request('/auth/me', token)).status, 401);
@@ -66,4 +68,66 @@ try {
 } finally {
   api.kill();
   await exited;
+}
+
+async function verifyScheduling(token) {
+  async function json(path, method, body, expected) {
+    const response = await request('/admin/' + path, token, {
+      method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    const result = await response.json();
+    assert.equal(response.status, expected, JSON.stringify(result));
+    return result;
+  }
+  const fixture = Date.now().toString(36);
+  const stationPayload = { code: 'TEST-' + fixture, name: 'Ga thử', city: 'Hà Nội' };
+  const station = await json('stations', 'POST', stationPayload, 201);
+  await json('stations/' + station.id, 'PUT', { ...stationPayload, name: 'Ga kiểm thử' }, 200);
+  const routes = (await json('routes', 'GET', undefined, 200)).filter((route) => route.code.startsWith('DEMO-'));
+  assert.equal(routes.length, 2);
+  await json('routes', 'POST', {
+    code: 'BAD-' + fixture, name: 'Invalid route', stops: [routes[0].stops[0], routes[0].stops[0]],
+  }, 400);
+  const customRoute = await json('routes', 'POST', {
+    code: 'TEST-' + fixture, name: 'Tuyến thử', stops: [routes[0].stops[0], { stationId: station.id, distanceKm: 50 }],
+  }, 201);
+  await json('routes/' + customRoute.id, 'PUT', {
+    code: 'TEST-' + fixture, name: 'Tuyến cập nhật', stops: [routes[0].stops[0], { stationId: station.id, distanceKm: 60 }],
+  }, 200);
+  const coachInput = {
+    code: 'TEST-' + fixture, name: 'Toa mẫu', places: [
+      { label: '01', kind: 'SEAT' }, { label: '02', kind: 'BERTH' },
+    ],
+  };
+  const coach = await json('coach-templates', 'POST', coachInput, 201);
+  const futureDay = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
+  const followingDay = new Date(Date.now() + 8 * 86_400_000).toISOString().slice(0, 10);
+  for (const [direction, route] of routes.entries()) {
+    const stops = route.stops.map(({ stationId }, index) => ({
+      stationId,
+      arrivalAt: index === 0 ? null : `${followingDay}T0${index}:00+07:00`,
+      departureAt: index === 0 ? `${futureDay}T23:30+07:00` :
+        index === route.stops.length - 1 ? null : `${followingDay}T0${index}:10+07:00`,
+    }));
+    const input = { code: `T${direction}-${fixture}`, routeId: route.id, coachTemplateIds: [coach.id, coach.id], stops };
+    const swappedIds = stops.map((stop) => stop.stationId);
+    [swappedIds[1], swappedIds[2]] = [swappedIds[2], swappedIds[1]];
+    await json('trips', 'POST', {
+      ...input, stops: stops.map((stop, index) => ({ ...stop, stationId: swappedIds[index] })),
+    }, 400);
+    await json('trips', 'POST', {
+      ...input, stops: [stops[0], { ...stops[1], departureAt: `${followingDay}T00:30+07:00` }, ...stops.slice(2)],
+    }, 400);
+    const trip = await json('trips', 'POST', input, 201);
+    assert.equal((await json('trips/' + trip.id, 'GET', undefined, 200)).status, 'DRAFT');
+    await json('trips/' + trip.id + '/publish', 'POST', undefined, 201);
+    await json('trips/' + trip.id + '/publish', 'POST', undefined, 201);
+    const detail = await json('trips/' + trip.id, 'GET', undefined, 200);
+    assert.equal(detail.status, 'ON_SALE');
+    assert.equal(detail.stops.length, 5);
+    assert.equal(+new Date(detail.stops[1].arrivalAt) - +new Date(detail.departureAt), 90 * 60_000);
+    await json('coach-templates/' + coach.id, 'PUT', { ...coachInput, name: 'Toa đã sửa' }, 200);
+    const afterEdit = await json('trips/' + trip.id, 'GET', undefined, 200);
+    assert.deepEqual(afterEdit.coaches, detail.coaches);
+  }
 }
