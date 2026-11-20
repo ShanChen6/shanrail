@@ -42,3 +42,7 @@ jobs:
       - run: pnpm db:seed
       - run: pnpm test
       - run: pnpm --filter @shanrail/api exec node scripts/auth-smoke.mjs
+      - name: Restore the populated PostgreSQL database and compare data
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+        run: scripts/verify-postgres-restore.sh "$POSTGRES_CONTAINER"

@@ -89,3 +89,18 @@ Trên máy staging, trỏ DNS của domain về máy và mở cổng 80/443. T�
 Tạo dữ liệu mẫu bằng `docker compose --env-file .env.staging -f compose.staging.yaml exec -e SHANRAIL_SEED_PASSWORD api pnpm db:seed`, với mật khẩu mẫu đã đặt trong môi trường shell. Trên trang quản trị, tạo mẫu toa 50 chỗ rồi lập và mở bán chuyến 10 toa dùng mẫu đó. Chạy `node apps/api/scripts/staging-perf.mjs https://<host> <trip-id> <from-id> <to-id> YYYY-MM-DD` để ghi p95 với 100 yêu cầu mỗi endpoint, đồng thời 10 yêu cầu. Chạy từ máy có kết nối tới staging.
 
 Để nghiệm thu realtime, mở cùng sơ đồ toa ở hai phiên desktop/mobile độc lập. Giữ rồi hủy một ghế ở phiên thứ nhất và đo thời gian để trạng thái đổi ở phiên thứ hai. Kiểm tra cả thời điểm lượt giữ tự hết hạn. Mục tiêu là 1–2 giây. SSE kiểm tra ảnh chụp trạng thái mỗi giây theo từng kết nối đang mở.
+
+## Nghiệm thu MVP và vận hành (SR-011)
+
+CI dựng PostgreSQL mới, chạy migration và seed hai lần, rồi kiểm tra liveness/readiness và luồng hai chiều từ lập chuyến đến soát vé. Sau HTTP smoke test, CI dump và restore dữ liệu sang một database tạm, xác nhận các bảng nghiệp vụ có dữ liệu và so sánh số dòng cùng dấu vân tay dữ liệu của mọi bảng public. Bài restore tự dọn database tạm và bản dump. Chạy riêng trên **database thử nghiệm đã có dữ liệu smoke và không có ghi đồng thời** bằng `scripts/verify-postgres-restore.sh <postgres-container> [database]`.
+
+Khi triển khai staging, giữ các biến môi trường trong file riêng và dùng PostgreSQL volume theo cấu hình staging. Trước khi cập nhật, tạo bản dump PostgreSQL định dạng custom và lưu vào nơi sao lưu được bảo vệ. Khi diễn tập khôi phục, tạo database đích mới, restore vào đó, kiểm tra dữ liệu và health check trước khi chuyển API sang database đã khôi phục. Giữ database hiện tại để có thể chuyển lại nếu kiểm tra thất bại.
+
+| Tiêu chí phát hành | Cách xác minh |
+| --- | --- |
+| Tạo chuyến, giữ chỗ, thanh toán sandbox, phát và soát vé | Job CI chạy `auth-smoke.mjs` |
+| Backup và restore dữ liệu có giao dịch và lượt soát vé | Bước restore trong cùng job CI |
+| HTTPS và giao diện desktop/mobile | Kiểm tra trên staging theo SR-010 |
+| p95 dưới 500 ms và cập nhật chỗ trong 1–2 giây | Đo trên staging với đoàn 500 chỗ theo SR-010 |
+
+Ghi lại commit, kết quả CI, URL staging, thời gian restore và số đo hiệu năng trong biên bản nghiệm thu. Gắn tag MVP cho commit đã qua nghiệm thu. Phạm vi hiện tại dùng sandbox thanh toán nội bộ và hộp thư file thử nghiệm.
