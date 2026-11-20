@@ -1,5 +1,6 @@
 'use client';
 
+import CoachMap from './coach-map';
 import { useEffect, useState, type FormEvent } from 'react';
 
 type Station = { id: string; code: string; name: string; city: string };
@@ -26,6 +27,7 @@ async function get<T>(path: string, signal?: AbortSignal): Promise<T> {
 export default function TripSearch() {
   const [stations, setStations] = useState<Station[] | null>(null);
   const [trips, setTrips] = useState<Trip[] | null>(null);
+  const [segment, setSegment] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [stationAttempt, setStationAttempt] = useState(0);
@@ -53,6 +55,7 @@ export default function TripSearch() {
     try {
       const query = new URLSearchParams({ from, to, date: String(fields.get('date')) });
       setTrips(await get<Trip[]>('trips?' + query));
+      setSegment(new URLSearchParams({ from, to }).toString());
     } catch {
       setError('Không tải được chuyến tàu. Vui lòng thử lại.');
     } finally {
@@ -95,6 +98,7 @@ export default function TripSearch() {
             <dt>{fare.kind === 'SEAT' ? 'Ghế ngồi' : 'Giường nằm'}</dt>
             <dd>{price.format(fare.amountVnd)}</dd>
           </div>)}</dl>
+          <CoachMap path={`/rail-api/public/trips/${trip.id}/coaches?${segment}`} />
         </li>)}</ul>}
     </div>}
   </div>;

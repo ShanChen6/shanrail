@@ -51,3 +51,9 @@ API cần token Bearer có quyền quản trị. `GET`, `POST` và `PUT /admin/{
 Trang chủ lấy ga từ `GET /public/stations` và gọi `GET /public/trips?from=<uuid>&to=<uuid>&date=YYYY-MM-DD`. Khách có thể tìm mà không cần đăng nhập. Kết quả lấy ngày theo giờ Việt Nam tại ga lên tàu, kể cả khi chuyến rời ga đầu từ hôm trước. API chỉ trả chuyến đã mở bán, còn giờ lên tàu và đi đúng chiều đã chọn.
 
 Giá mỗi hạng bằng số km của chặng nhân đơn giá VND/km lưu trên chuyến. Đơn giá mẫu là 900 cho ghế và 1.500 cho giường. Kết quả chỉ hiển thị các hạng có cấu hình trên chuyến. Sau khi chạy migration mới, tạo và mở bán một chuyến trong trang quản trị để có dữ liệu tra cứu.
+
+## Sơ đồ toa theo chặng (SR-005)
+
+Từ kết quả tìm chuyến, chọn **Xem sơ đồ toa** rồi chọn toa cần xem. Sơ đồ dùng thứ tự chỗ trong cấu hình toa và hiển thị trạng thái trống, đang giữ hoặc đã bán. Nút **Cập nhật trạng thái** tải lại trạng thái hiện tại.
+
+`GET /public/trips/:id/coaches?from=<uuid>&to=<uuid>` chỉ trả sơ đồ cho chặng còn mở bán. Migration 004 lưu trạng thái chiếm chỗ theo đoạn giữa hai ga liền kề. Chặng kết thúc tại ga lên tàu không xung đột với chặng khách chọn. Lượt giữ hết hạn được xem là trống và trạng thái đã bán được ưu tiên nếu có cả hai trên chặng. Luồng ghi giữ chỗ thuộc SR-006.

@@ -139,6 +139,16 @@ async function verifyScheduling(token) {
     const to = route.stops[2].stationId;
     const matched = (await search(from, to, followingDay)).find((item) => item.id === trip.id);
     assert.ok(matched);
+    const mapPath = '/public/trips/' + trip.id + '/coaches?';
+    const map = await request(mapPath + new URLSearchParams({ from, to }));
+    assert.equal(map.status, 200);
+    assert.equal(map.headers.get('cache-control'), 'no-store');
+    const coaches = await map.json();
+    assert.deepEqual(coaches.map(({ number }) => number), [1, 2]);
+    assert.deepEqual(coaches[0].places, coachInput.places.map((place) => ({
+      ...place, status: 'AVAILABLE',
+    })));
+    assert.equal((await request(mapPath + new URLSearchParams({ from: to, to: from }))).status, 404);
     const km = route.stops[2].distanceKm - route.stops[1].distanceKm;
     assert.equal(matched.distanceKm, km);
     assert.deepEqual(matched.fares, [
