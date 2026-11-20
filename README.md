@@ -63,3 +63,9 @@ Từ kết quả tìm chuyến, chọn **Xem sơ đồ toa** rồi chọn toa c�
 Chọn tối đa 6 ghế hoặc giường trên một chặng, có thể chọn từ nhiều toa. Chọn **Giữ chỗ** để giữ toàn bộ trong tối đa 10 phút, hoặc đến giờ tàu chạy tại ga lên nếu sớm hơn. Nút **Hủy giữ chỗ** trả lại toàn bộ lượt giữ. Lượt hết hạn được coi là trống ngay và bản ghi hết hạn được dọn khi có yêu cầu giữ mới trên chuyến.
 
 `POST /public/trips/:id/holds` nhận `{from,to,places:[{coachNumber,label}]}`. Nếu có xung đột, API trả 409 và rollback toàn bộ. `DELETE /public/holds/:id` hủy lượt giữ bằng mã trả về từ POST. Mã này được lưu trong phiên tab và có quyền hủy lượt giữ, nên giữ riêng.
+
+## Thanh toán thử nghiệm (SR-007)
+
+Đặt `SHANRAIL_SANDBOX_SECRET` ít nhất 32 ký tự trong môi trường API để bật sandbox nội bộ. Sau khi giữ chỗ, mở **Thông tin hành khách**, điền tên và nhóm giá từng người rồi chọn **Tính tổng tiền**. Mặc định trẻ em giảm 20%, có thể cấu hình bằng `SHANRAIL_CHILD_DISCOUNT_PERCENT` từ 0 đến 99. Giá được chốt bằng VND trên API.
+
+Hai nút mô phỏng gửi kết quả thành công hoặc thất bại tới cùng bộ xử lý callback ký HMAC. Callback thành công hợp lệ chuyển chỗ sang đã bán. Khoản thành công đến muộn chuyển sang trạng thái đối soát `REVIEW`. Sandbox nội bộ không thu tiền và chưa kết nối cổng thanh toán bên thứ ba. Chỉ bật trình mô phỏng ở môi trường thử nghiệm.

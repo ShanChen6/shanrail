@@ -1,5 +1,6 @@
 'use client';
 
+import Checkout from './checkout';
 import { useEffect, useState } from 'react';
 
 const labels = { AVAILABLE: 'Trống', HELD: 'Đang giữ', SOLD: 'Đã bán' };
@@ -16,6 +17,8 @@ export default function CoachMap({ path }: { path: string }) {
   const [error, setError] = useState(false);
   const [picks, setPicks] = useState<Pick[]>([]);
   const [hold, setHold] = useState<Hold | null>(null);
+  const [checkout, setCheckout] = useState(false);
+  const [payment, setPayment] = useState('');
   const [remaining, setRemaining] = useState(0);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
@@ -34,6 +37,8 @@ export default function CoachMap({ path }: { path: string }) {
   function clearHold() {
     sessionStorage.removeItem(storageKey);
     setHold(null);
+    setCheckout(false);
+    setPayment('');
     setPicks([]);
   }
 
@@ -122,10 +127,15 @@ export default function CoachMap({ path }: { path: string }) {
       {error && <p role="alert">Không tải được sơ đồ toa.</p>}
       {notice && <p role="alert">{notice}</p>}
       {hold && <div>
-        <p>{remaining > 0 ? `Giữ chỗ còn ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}` : 'Đã hết thời gian giữ chỗ.'}</p>
-        <button type="button" disabled={busy} onClick={() => void release()}>
-          {remaining > 0 ? 'Hủy giữ chỗ' : 'Chọn lại chỗ'}
-        </button>
+        {!payment && <p>{remaining > 0 ? `Giữ chỗ còn ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}` : 'Đã hết thời gian giữ chỗ.'}</p>}
+        {!checkout && <button type="button" onClick={() => setCheckout(true)}>Thông tin hành khách</button>}
+        {checkout && <Checkout holdId={hold.holdId} expired={remaining <= 0} onPayment={(status) => {
+          setPayment(status);
+          void load();
+        }} />}
+        {payment !== 'PAID' && payment !== 'REVIEW' && <button type="button" disabled={busy} onClick={() => void release()}>
+          {remaining > 0 && !payment ? 'Hủy giữ chỗ' : 'Chọn lại chỗ'}
+        </button>}
       </div>}
       {!loading && !busy && <button type="button" onClick={() => {
         setPicks([]);

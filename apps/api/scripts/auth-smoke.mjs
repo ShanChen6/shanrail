@@ -1,3 +1,4 @@
+import { createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
@@ -171,8 +172,54 @@ async function verifyScheduling(token) {
     }
     const releasedMap = await (await request(mapPath + new URLSearchParams({ from, to }))).json();
     assert.ok(releasedMap[0].places.every(({ status }) => status === 'AVAILABLE'));
-
     const km = route.stops[2].distanceKm - route.stops[1].distanceKm;
+    const paymentDb = new pg.Client({ connectionString: DATABASE_URL });
+    await paymentDb.connect();
+    try {
+      for (const [outcome, expired, expected] of [
+        ['FAILURE', false, 'FAILED'], ['SUCCESS', true, 'REVIEW'], ['SUCCESS', false, 'PAID'],
+      ]) {
+        const held = await hold([place]);
+        assert.equal(held.status, 201);
+        const { holdId } = await held.json();
+        const base = '/public/holds/' + holdId;
+        const post = (path, body) => request(path, undefined, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        });
+        const checkout = await post(base + '/checkout', {
+          passengers: [{ ...place, name: 'Khách thử', fareGroup: 'CHILD' }],
+        });
+        assert.equal(checkout.status, 201);
+        const quote = await checkout.json();
+        assert.equal(quote.amountVnd, km * 720);
+        const { rows: [{ payment_reference: reference }] } = await paymentDb.query(
+          'SELECT payment_reference FROM checkout_orders WHERE hold_id=$1', [holdId],
+        );
+        const wrongAmount = quote.amountVnd + 1;
+        const callbackBody = { reference, amountVnd: wrongAmount, outcome };
+        assert.equal((await post('/public/payments/sandbox/callback', callbackBody)).status, 401);
+        const signature = createHmac('sha256', process.env.SHANRAIL_SANDBOX_SECRET)
+          .update(`${reference}:${wrongAmount}:${outcome}`).digest('hex');
+        assert.equal((await request('/public/payments/sandbox/callback', undefined, {
+          method: 'POST', headers: { 'Content-Type': 'application/json', 'x-sandbox-signature': signature },
+          body: JSON.stringify(callbackBody),
+        })).status, 400);
+        if (expired) await paymentDb.query(
+          "UPDATE trip_place_segments SET expires_at=now()-interval '1 minute' WHERE hold_id=$1", [holdId],
+        );
+        for (let attempt = 0; attempt < 2; attempt++) {
+          const payment = await post(base + '/sandbox', { outcome });
+          assert.equal(payment.status, 200);
+          assert.deepEqual(await payment.json(), { status: expected });
+        }
+        const availability = await (await request(mapPath + new URLSearchParams({ from, to }))).json();
+        assert.equal(availability[0].places[0].status, expected === 'PAID' ? 'SOLD' : 'AVAILABLE');
+      }
+    } finally {
+      await paymentDb.end();
+    }
+
+
     assert.equal(matched.distanceKm, km);
     assert.deepEqual(matched.fares, [
       { kind: 'SEAT', amountVnd: km * 900 }, { kind: 'BERTH', amountVnd: km * 1500 },

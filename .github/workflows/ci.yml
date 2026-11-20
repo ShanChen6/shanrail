@@ -9,6 +9,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     env:
+      SHANRAIL_SANDBOX_SECRET: ci-only-shanrail-sandbox-secret-123456
       SHANRAIL_SEED_PASSWORD: shanrail-ci-only-fixture
       DATABASE_URL: postgresql://shanrail:shanrail_ci@127.0.0.1:5432/shanrail
     services:
