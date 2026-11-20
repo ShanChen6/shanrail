@@ -9,6 +9,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     env:
+      SHANRAIL_SEED_PASSWORD: shanrail-ci-only-fixture
       DATABASE_URL: postgresql://shanrail:shanrail_ci@127.0.0.1:5432/shanrail
     services:
       postgres:
@@ -33,4 +34,9 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm build
+      - run: pnpm db:migrate
+      - run: pnpm db:migrate
+      - run: pnpm db:seed
+      - run: pnpm db:seed
       - run: pnpm test
+      - run: pnpm --filter @shanrail/api exec node scripts/auth-smoke.mjs
