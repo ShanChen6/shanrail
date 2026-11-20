@@ -10,6 +10,7 @@ export default function HomePage() {
         <span>Shanrail</span>
         <Link className="admin-link" href="/orders">Đơn và vé</Link>
         <Link className="admin-link" href="/admin">Quản trị</Link>
+        <Link className="admin-link" href="/staff">Vận hành</Link>
       </header>
       <section aria-labelledby="page-title">
         <div className="route" aria-hidden="true"><span /><span /><span /></div>

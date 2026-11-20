@@ -75,3 +75,9 @@ Hai nút mô phỏng gửi kết quả thành công hoặc thất bại tới c�
 Sau khi thanh toán thử thành công, chọn **Xem vé** hoặc mở **Đơn và vé**. Mỗi hành khách có một vé với thông tin chuyến, toa, chỗ và QR chứa mã vé. Migration 007 phát hành bổ sung vé cho các đơn đã thanh toán từ trước. Lịch sử lưu mã truy cập riêng trong phiên tab. Mã vé QR và ID đơn không dùng để truy cập danh sách vé của đơn.
 
 Có thể đặt `SHANRAIL_TEST_MAILBOX` thành một thư mục riêng mà API có quyền ghi. Nút **Ghi thư thử nghiệm** ghi thông tin vé vào file `.eml` trong thư mục đó. Khi ghi lỗi, có thể thử lại. Gửi lại cùng đơn cập nhật file thử nghiệm của đơn. Luồng này dùng hộp thư file để nghiệm thu nội dung, chưa tích hợp SMTP hoặc dịch vụ gửi email.
+
+## Soát vé và đối soát (SR-009)
+
+Mở **Vận hành** tại `/staff`. Tài khoản INSPECTOR nhập mã vé hoặc quét QR bằng máy quét dạng bàn phím. Lần xác nhận đầu lưu người soát và thời điểm. Các lần sau hiển thị vé đã soát và thời điểm ban đầu.
+
+Tài khoản ADMIN tra cứu bằng mã đơn hoặc mã giao dịch và lọc theo trạng thái. Với đơn REVIEW, quản trị viên có thể ghi chú đối soát. Hệ thống lưu ghi nhận đầu tiên, giữ nguyên trạng thái thanh toán và chỗ. Đây là ghi nhận vận hành, chưa thực hiện hoàn tiền tự động.

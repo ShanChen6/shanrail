@@ -74,6 +74,10 @@ try {
 }
 
 async function verifyScheduling(token) {
+  const inspectorLogin = await login('inspector@example.test', SHANRAIL_SEED_PASSWORD);
+  assert.equal(inspectorLogin.status, 200);
+  const inspector = (await inspectorLogin.json()).token;
+  assert.equal((await request('/admin/orders', inspector)).status, 403);
   async function json(path, method, body, expected) {
     const response = await request('/admin/' + path, token, {
       method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -218,9 +222,30 @@ async function verifyScheduling(token) {
         assert.equal(availability[0].places[0].status, expected === 'PAID' ? 'SOLD' : 'AVAILABLE');
         const issued = await request(base + '/tickets');
         assert.equal(issued.status, expected === 'PAID' ? 200 : 404);
+        if (expected === 'REVIEW') {
+          const orders = await (await request('/admin/orders?' + new URLSearchParams({ id: reference, status: 'REVIEW' }), token)).json();
+          assert.equal(orders.length, 1);
+          const review = await request('/admin/orders/' + orders[0].id + '/review', token, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note: 'Ghi nhận thử nghiệm' }),
+          });
+          assert.equal(review.status, 200);
+          assert.equal((await review.json()).reviewNote, 'Ghi nhận thử nghiệm');
+        }
         if (expected === 'PAID') {
           const tickets = await issued.json();
           assert.equal(tickets.length, 1);
+          const scan = (auth) => request('/inspection/tickets', auth, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: tickets[0].id }),
+          });
+          assert.equal((await scan(token)).status, 403);
+          const scans = await Promise.all([scan(inspector), scan(inspector)]);
+          assert.ok(scans.every((response) => response.status === 200));
+          const results = await Promise.all(scans.map((response) => response.json()));
+          assert.deepEqual(results.map(({ status }) => status).sort(), ['ALREADY_CHECKED', 'CHECKED']);
+          assert.equal(results[0].inspectedAt, results[1].inspectedAt);
+
           assert.equal(tickets[0].passenger.name, 'Khách thử');
           assert.equal((await request('/public/holds/' + tickets[0].id + '/tickets')).status, 404);
           assert.deepEqual(await (await request(base + '/tickets')).json(), tickets);

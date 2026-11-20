@@ -91,3 +91,8 @@ p { line-height: 1.6; }
 .ticket-code { overflow-wrap: anywhere; }
 
 .brand .admin-link + .admin-link { margin-left: 0; }
+
+.brand { flex-wrap: wrap; }
+.staff form { display: flex; flex-wrap: wrap; align-items: end; gap: .75rem; margin-block: 1rem; }
+.staff label { display: grid; gap: .3rem; }
+.staff input, .staff select, .staff button { font: inherit; padding: .5rem; }

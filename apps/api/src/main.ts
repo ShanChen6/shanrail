@@ -8,6 +8,7 @@ import { TripSearchController } from './trip-search.js';
 import { PlaceHoldsController } from './place-holds.js';
 import { CheckoutController } from './checkout.js';
 import { TicketsController } from './tickets.js';
+import { InspectionController, OrderOperationsController } from './operations.js';
 import { AdminSchedule, AdminScheduleController } from './admin-schedule.js';
 import { AuthController, RoleGuard, SessionGuard, AuthorizationController } from './auth.js';
 
@@ -32,7 +33,7 @@ class HealthController {
 }
 
 @Module({
-  controllers: [HealthController, AuthController, AuthorizationController, AdminScheduleController, TripSearchController, PlaceHoldsController, CheckoutController, TicketsController],
+  controllers: [HealthController, AuthController, AuthorizationController, AdminScheduleController, TripSearchController, PlaceHoldsController, CheckoutController, TicketsController, InspectionController, OrderOperationsController],
   providers: [Database, SessionGuard, RoleGuard, AdminSchedule],
 })
 class AppModule {}
