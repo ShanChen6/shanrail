@@ -56,4 +56,10 @@ Giá mỗi hạng bằng số km của chặng nhân đơn giá VND/km lưu trê
 
 Từ kết quả tìm chuyến, chọn **Xem sơ đồ toa** rồi chọn toa cần xem. Sơ đồ dùng thứ tự chỗ trong cấu hình toa và hiển thị trạng thái trống, đang giữ hoặc đã bán. Nút **Cập nhật trạng thái** tải lại trạng thái hiện tại.
 
-`GET /public/trips/:id/coaches?from=<uuid>&to=<uuid>` chỉ trả sơ đồ cho chặng còn mở bán. Migration 004 lưu trạng thái chiếm chỗ theo đoạn giữa hai ga liền kề. Chặng kết thúc tại ga lên tàu không xung đột với chặng khách chọn. Lượt giữ hết hạn được xem là trống và trạng thái đã bán được ưu tiên nếu có cả hai trên chặng. Luồng ghi giữ chỗ thuộc SR-006.
+`GET /public/trips/:id/coaches?from=<uuid>&to=<uuid>` chỉ trả sơ đồ cho chặng còn mở bán. Migration 004 lưu trạng thái chiếm chỗ theo đoạn giữa hai ga liền kề. Chặng kết thúc tại ga lên tàu không xung đột với chặng khách chọn. Lượt giữ hết hạn được xem là trống và trạng thái đã bán được ưu tiên nếu có cả hai trên chặng.
+
+## Giữ chỗ (SR-006)
+
+Chọn tối đa 6 ghế hoặc giường trên một chặng, có thể chọn từ nhiều toa. Chọn **Giữ chỗ** để giữ toàn bộ trong tối đa 10 phút, hoặc đến giờ tàu chạy tại ga lên nếu sớm hơn. Nút **Hủy giữ chỗ** trả lại toàn bộ lượt giữ. Lượt hết hạn được coi là trống ngay và bản ghi hết hạn được dọn khi có yêu cầu giữ mới trên chuyến.
+
+`POST /public/trips/:id/holds` nhận `{from,to,places:[{coachNumber,label}]}`. Nếu có xung đột, API trả 409 và rollback toàn bộ. `DELETE /public/holds/:id` hủy lượt giữ bằng mã trả về từ POST. Mã này được lưu trong phiên tab và có quyền hủy lượt giữ, nên giữ riêng.

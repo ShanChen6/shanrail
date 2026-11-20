@@ -149,6 +149,29 @@ async function verifyScheduling(token) {
       ...place, status: 'AVAILABLE',
     })));
     assert.equal((await request(mapPath + new URLSearchParams({ from: to, to: from }))).status, 404);
+    const holdPath = '/public/trips/' + trip.id + '/holds';
+    const hold = (places, start = from, end = to) => request(holdPath, undefined, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: start, to: end, places }),
+    });
+    const place = { coachNumber: 1, label: '01' };
+    const contenders = await Promise.all(Array.from({ length: 20 }, () => hold([place])));
+    assert.equal(contenders.filter(({ status }) => status === 201).length, 1);
+    assert.equal(contenders.filter(({ status }) => status === 409).length, 19);
+    const winner = await contenders.find(({ status }) => status === 201).json();
+    const otherPlace = { coachNumber: 1, label: '02' };
+    assert.equal((await hold([otherPlace, place])).status, 409);
+    const updatedMap = await (await request(mapPath + new URLSearchParams({ from, to }))).json();
+    assert.deepEqual(updatedMap[0].places.map(({ status }) => status), ['HELD', 'AVAILABLE']);
+    const adjacent = await hold([place], route.stops[0].stationId, from);
+    assert.equal(adjacent.status, 201);
+    const adjacentHold = await adjacent.json();
+    for (const id of [winner.holdId, adjacentHold.holdId]) {
+      assert.equal((await request('/public/holds/' + id, undefined, { method: 'DELETE' })).status, 204);
+    }
+    const releasedMap = await (await request(mapPath + new URLSearchParams({ from, to }))).json();
+    assert.ok(releasedMap[0].places.every(({ status }) => status === 'AVAILABLE'));
+
     const km = route.stops[2].distanceKm - route.stops[1].distanceKm;
     assert.equal(matched.distanceKm, km);
     assert.deepEqual(matched.fares, [
