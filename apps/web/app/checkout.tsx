@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState, type FormEvent } from 'react';
 
 type Passenger = { coachNumber: number; label: string; name?: string; amountVnd?: number };
@@ -43,9 +44,11 @@ export default function Checkout({ holdId, expired, onPayment }: {
     setError('');
     const fields = new FormData(event.currentTarget);
     try {
-      setData(await post('/checkout', { passengers: data.passengers.map((place, index) => ({
+      const result = await post('/checkout', { passengers: data.passengers.map((place, index) => ({
         ...place, name: fields.get('name-' + index), fareGroup: fields.get('fare-' + index),
-      })) }));
+      })) });
+      setData(result);
+      sessionStorage.setItem('shanrail:order:' + holdId, JSON.stringify({ holdId }));
     } catch {
       setError('Không thể chốt thông tin hành khách. Kiểm tra lượt giữ rồi thử lại.');
     } finally { setBusy(false); }
@@ -88,7 +91,7 @@ export default function Checkout({ holdId, expired, onPayment }: {
       <button type="button" disabled={busy} onClick={() => void pay('SUCCESS')}>Mô phỏng thanh toán thành công</button>
       {' '}<button type="button" disabled={busy} onClick={() => void pay('FAILURE')}>Mô phỏng thanh toán thất bại</button>
     </>}
-    {data?.status === 'PAID' && <p role="status">Đã xác nhận thanh toán sandbox.</p>}
+    {data?.status === 'PAID' && <p role="status">Đã xác nhận thanh toán sandbox. <Link href="/orders">Xem vé</Link></p>}
     {data?.status === 'FAILED' && <p role="status">Thanh toán thất bại. Chỗ đã được trả lại.</p>}
     {data?.status === 'REVIEW' && <p role="status">Khoản thanh toán đang chờ đối soát.</p>}
   </div>;

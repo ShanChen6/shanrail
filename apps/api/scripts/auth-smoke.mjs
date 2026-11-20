@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+import { join } from 'node:path';
 import { createHmac } from 'node:crypto';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
@@ -214,6 +216,23 @@ async function verifyScheduling(token) {
         }
         const availability = await (await request(mapPath + new URLSearchParams({ from, to }))).json();
         assert.equal(availability[0].places[0].status, expected === 'PAID' ? 'SOLD' : 'AVAILABLE');
+        const issued = await request(base + '/tickets');
+        assert.equal(issued.status, expected === 'PAID' ? 200 : 404);
+        if (expected === 'PAID') {
+          const tickets = await issued.json();
+          assert.equal(tickets.length, 1);
+          assert.equal(tickets[0].passenger.name, 'Khách thử');
+          assert.equal((await request('/public/holds/' + tickets[0].id + '/tickets')).status, 404);
+          assert.deepEqual(await (await request(base + '/tickets')).json(), tickets);
+          for (let retry = 0; retry < 2; retry++) {
+            const email = await post(base + '/ticket-email', { email: 'customer@example.test' });
+            assert.equal(email.status, 200);
+            assert.deepEqual(await email.json(), { status: 'CAPTURED' });
+          }
+          const message = await readFile(join(process.env.SHANRAIL_TEST_MAILBOX, tickets[0].id + '.eml'), 'utf8');
+          assert.match(message, /To: customer@example\.test/);
+        }
+
       }
     } finally {
       await paymentDb.end();

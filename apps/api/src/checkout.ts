@@ -100,7 +100,6 @@ export class CheckoutController {
   @Get('holds/:id/checkout')
   @Header('Cache-Control', 'no-store')
   async status(@Param('id') id: string) {
-    sandboxSecret();
     const hold = uuid(id, 'hold');
     const { rows: [order] } = await this.db.query<Order>('SELECT * FROM checkout_orders WHERE hold_id=$1', [hold]);
     if (order) return summary(order);
@@ -171,6 +170,14 @@ export class CheckoutController {
         await client.query("DELETE FROM trip_place_segments WHERE hold_id=$1 AND state='HELD'", [order.hold_id]);
       }
       await client.query('UPDATE checkout_orders SET status=$2 WHERE id=$1', [order.id, status]);
+      if (status === 'PAID') {
+        await client.query(`
+          INSERT INTO tickets (order_id, passenger_index)
+          SELECT id, p.position::integer FROM checkout_orders
+          CROSS JOIN LATERAL jsonb_array_elements(passengers) WITH ORDINALITY p(passenger, position)
+          WHERE id=$1 ON CONFLICT (order_id, passenger_index) DO NOTHING
+        `, [order.id]);
+      }
       return { status };
     });
   }

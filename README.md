@@ -69,3 +69,9 @@ Chọn tối đa 6 ghế hoặc giường trên một chặng, có thể chọn 
 Đặt `SHANRAIL_SANDBOX_SECRET` ít nhất 32 ký tự trong môi trường API để bật sandbox nội bộ. Sau khi giữ chỗ, mở **Thông tin hành khách**, điền tên và nhóm giá từng người rồi chọn **Tính tổng tiền**. Mặc định trẻ em giảm 20%, có thể cấu hình bằng `SHANRAIL_CHILD_DISCOUNT_PERCENT` từ 0 đến 99. Giá được chốt bằng VND trên API.
 
 Hai nút mô phỏng gửi kết quả thành công hoặc thất bại tới cùng bộ xử lý callback ký HMAC. Callback thành công hợp lệ chuyển chỗ sang đã bán. Khoản thành công đến muộn chuyển sang trạng thái đối soát `REVIEW`. Sandbox nội bộ không thu tiền và chưa kết nối cổng thanh toán bên thứ ba. Chỉ bật trình mô phỏng ở môi trường thử nghiệm.
+
+## Vé điện tử và lịch sử (SR-008)
+
+Sau khi thanh toán thử thành công, chọn **Xem vé** hoặc mở **Đơn và vé**. Mỗi hành khách có một vé với thông tin chuyến, toa, chỗ và QR chứa mã vé. Migration 007 phát hành bổ sung vé cho các đơn đã thanh toán từ trước. Lịch sử lưu mã truy cập riêng trong phiên tab. Mã vé QR và ID đơn không dùng để truy cập danh sách vé của đơn.
+
+Có thể đặt `SHANRAIL_TEST_MAILBOX` thành một thư mục riêng mà API có quyền ghi. Nút **Ghi thư thử nghiệm** ghi thông tin vé vào file `.eml` trong thư mục đó. Khi ghi lỗi, có thể thử lại. Gửi lại cùng đơn cập nhật file thử nghiệm của đơn. Luồng này dùng hộp thư file để nghiệm thu nội dung, chưa tích hợp SMTP hoặc dịch vụ gửi email.

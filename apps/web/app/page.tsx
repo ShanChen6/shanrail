@@ -8,6 +8,7 @@ export default function HomePage() {
       <header className="brand">
         <Image src="/icon.svg" alt="" width={36} height={36} />
         <span>Shanrail</span>
+        <Link className="admin-link" href="/orders">Đơn và vé</Link>
         <Link className="admin-link" href="/admin">Quản trị</Link>
       </header>
       <section aria-labelledby="page-title">

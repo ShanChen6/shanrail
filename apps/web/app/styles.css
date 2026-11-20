@@ -86,3 +86,8 @@ p { line-height: 1.6; }
 
 .coach-places button { display: grid; gap: .25rem; width: 100%; background: transparent; color: inherit; }
 .coach-places button[aria-pressed="true"] { background: #0a473c; color: white; }
+
+.ticket-order { border: 1px solid #b6d3c8; border-radius: .75rem; padding: 1rem; margin: 1rem 0; background: white; }
+.ticket-code { overflow-wrap: anywhere; }
+
+.brand .admin-link + .admin-link { margin-left: 0; }

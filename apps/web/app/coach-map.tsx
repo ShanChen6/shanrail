@@ -131,6 +131,10 @@ export default function CoachMap({ path }: { path: string }) {
         {!checkout && <button type="button" onClick={() => setCheckout(true)}>Thông tin hành khách</button>}
         {checkout && <Checkout holdId={hold.holdId} expired={remaining <= 0} onPayment={(status) => {
           setPayment(status);
+          if (status === 'PAID' || status === 'REVIEW') {
+            sessionStorage.setItem('shanrail:order:' + hold.holdId, JSON.stringify({ holdId: hold.holdId }));
+            sessionStorage.removeItem(storageKey);
+          }
           void load();
         }} />}
         {payment !== 'PAID' && payment !== 'REVIEW' && <button type="button" disabled={busy} onClick={() => void release()}>
