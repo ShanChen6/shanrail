@@ -1,4 +1,5 @@
-import { BadRequestException, Controller, Get, Header, NotFoundException, Param, Query } from '@nestjs/common';
+import { exhaustMap, distinctUntilChanged, map, merge, timer } from 'rxjs';
+import { BadRequestException, Controller, Get, Header, NotFoundException, Param, Query, Sse } from '@nestjs/common';
 import { Database } from './database.js';
 import { uuid } from './schedule-input.js';
 
@@ -44,6 +45,20 @@ export class TripSearchController {
     `, [tripId, origin, destination]);
     if (!rows.length) throw new NotFoundException('Không tìm thấy sơ đồ toa cho chặng này.');
     return rows;
+  }
+
+  @Sse('trips/:id/coaches/events')
+  @Header('X-Accel-Buffering', 'no')
+  async coachEvents(@Param('id') id: string, @Query('from') from: unknown, @Query('to') to: unknown) {
+    const initial = await this.coaches(id, from, to);
+    const changes = timer(0, 1000).pipe(
+      exhaustMap((tick) => tick === 0 ? Promise.resolve(initial) : this.coaches(id, from, to)),
+      map((coaches) => JSON.stringify(coaches)),
+      distinctUntilChanged(),
+      map((payload) => ({ type: 'coaches', data: payload })),
+    );
+    const heartbeat = timer(15000, 15000).pipe(map(() => ({ type: 'heartbeat', data: 'ok' })));
+    return merge(changes, heartbeat);
   }
 
   @Get('trips')

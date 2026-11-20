@@ -1,0 +1,51 @@
+name: shanrail-staging
+services:
+  db:
+    image: postgres:18.6
+    environment:
+      POSTGRES_DB: shanrail
+      POSTGRES_USER: shanrail
+      POSTGRES_PASSWORD: ${STAGING_DB_PASSWORD:?set STAGING_DB_PASSWORD}
+    volumes:
+      - staging-db:/var/lib/postgresql
+    healthcheck:
+      test: [CMD, pg_isready, -U, shanrail, -d, shanrail]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  api:
+    image: shanrail-staging-app
+    build: .
+    environment:
+      DATABASE_URL: postgresql://shanrail:${STAGING_DB_PASSWORD:?set STAGING_DB_PASSWORD}@db:5432/shanrail
+      API_HOST: 0.0.0.0
+      SHANRAIL_REQUEST_LOG: "1"
+      SHANRAIL_SANDBOX_SECRET: ${SHANRAIL_SANDBOX_SECRET:?set SHANRAIL_SANDBOX_SECRET}
+      SHANRAIL_TEST_MAILBOX: /tmp/shanrail-mailbox
+    command: [sh, -ec, "pnpm db:migrate && exec pnpm --filter @shanrail/api start"]
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, node, -e, "fetch('http://127.0.0.1:3001/health/ready').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  web:
+    image: shanrail-staging-app
+    command: [pnpm, --filter, "@shanrail/web", start, --hostname, 0.0.0.0]
+    depends_on:
+      api:
+        condition: service_healthy
+  proxy:
+    image: caddy:2
+    environment:
+      STAGING_HOST: ${STAGING_HOST:?set STAGING_HOST}
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile.staging:/etc/caddy/Caddyfile:ro
+      - staging-caddy:/data
+    depends_on: [web]
+volumes:
+  staging-db:
+  staging-caddy:

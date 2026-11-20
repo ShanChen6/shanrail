@@ -81,3 +81,11 @@ Có thể đặt `SHANRAIL_TEST_MAILBOX` thành một thư mục riêng mà API 
 Mở **Vận hành** tại `/staff`. Tài khoản INSPECTOR nhập mã vé hoặc quét QR bằng máy quét dạng bàn phím. Lần xác nhận đầu lưu người soát và thời điểm. Các lần sau hiển thị vé đã soát và thời điểm ban đầu.
 
 Tài khoản ADMIN tra cứu bằng mã đơn hoặc mã giao dịch và lọc theo trạng thái. Với đơn REVIEW, quản trị viên có thể ghi chú đối soát. Hệ thống lưu ghi nhận đầu tiên, giữ nguyên trạng thái thanh toán và chỗ. Đây là ghi nhận vận hành, chưa thực hiện hoàn tiền tự động.
+
+## Staging HTTPS (SR-010)
+
+Trên máy staging, trỏ DNS của domain về máy và mở cổng 80/443. Tạo file `.env.staging` với `STAGING_HOST`, `STAGING_DB_PASSWORD` (dùng chuỗi hex ngẫu nhiên để nhúng được trong URL) và `SHANRAIL_SANDBOX_SECRET` (ít nhất 32 ký tự). Chạy `docker compose --env-file .env.staging -f compose.staging.yaml up -d --build --wait`. Caddy xử lý HTTPS và chuyển tiếp SSE. API chạy migration trước khi khởi động. PostgreSQL chỉ kết nối qua mạng nội bộ Compose. Xem lỗi và thời gian phản hồi bằng `docker compose --env-file .env.staging -f compose.staging.yaml logs api`.
+
+Tạo dữ liệu mẫu bằng `docker compose --env-file .env.staging -f compose.staging.yaml exec -e SHANRAIL_SEED_PASSWORD api pnpm db:seed`, với mật khẩu mẫu đã đặt trong môi trường shell. Trên trang quản trị, tạo mẫu toa 50 chỗ rồi lập và mở bán chuyến 10 toa dùng mẫu đó. Chạy `node apps/api/scripts/staging-perf.mjs https://<host> <trip-id> <from-id> <to-id> YYYY-MM-DD` để ghi p95 với 100 yêu cầu mỗi endpoint, đồng thời 10 yêu cầu. Chạy từ máy có kết nối tới staging.
+
+Để nghiệm thu realtime, mở cùng sơ đồ toa ở hai phiên desktop/mobile độc lập. Giữ rồi hủy một ghế ở phiên thứ nhất và đo thời gian để trạng thái đổi ở phiên thứ hai. Kiểm tra cả thời điểm lượt giữ tự hết hạn. Mục tiêu là 1–2 giây. SSE kiểm tra ảnh chụp trạng thái mỗi giây theo từng kết nối đang mở.

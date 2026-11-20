@@ -35,7 +35,7 @@ const exited = once(api, 'exit');
 const request = (path, token, options = {}) => fetch(`http://127.0.0.1:${port}${path}`, {
   ...options,
   headers: { ...options.headers, ...(token && { Authorization: `Bearer ${token}` }) },
-  signal: AbortSignal.timeout(3000),
+  signal: options.signal ?? AbortSignal.timeout(3000),
 });
 const login = (email, password) => request('/auth/login', undefined, {
   method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -162,7 +162,19 @@ async function verifyScheduling(token) {
       body: JSON.stringify({ from: start, to: end, places }),
     });
     const place = { coachNumber: 1, label: '01' };
-    const contenders = await Promise.all(Array.from({ length: 20 }, () => hold([place])));
+    const eventPath = mapPath.replace('coaches?', 'coaches/events?') + new URLSearchParams({ from, to });
+    const streams = new AbortController();
+    let contenders;
+    try {
+      const clients = await Promise.all([0, 1].map(() => openCoachStream(eventPath, streams.signal)));
+      await Promise.all(clients.map((next) => next('AVAILABLE')));
+      const started = performance.now();
+      contenders = await Promise.all(Array.from({ length: 20 }, () => hold([place])));
+      await Promise.all(clients.map((next) => next('HELD')));
+      console.log('Two independent SSE clients saw HELD in %d ms', Math.round(performance.now() - started));
+    } finally {
+      streams.abort();
+    }
     assert.equal(contenders.filter(({ status }) => status === 201).length, 1);
     assert.equal(contenders.filter(({ status }) => status === 409).length, 19);
     const winner = await contenders.find(({ status }) => status === 201).json();
@@ -272,4 +284,28 @@ async function verifyScheduling(token) {
     assert.ok(!(await search(to, from, followingDay)).some((item) => item.id === trip.id));
 
   }
+}
+
+async function openCoachStream(path, signal) {
+  const response = await request(path, undefined, { signal: AbortSignal.any([signal, AbortSignal.timeout(8000)]) });
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('content-type'), /text\/event-stream/);
+  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+  let pending = '';
+  return async (status) => {
+    for (;;) {
+      const boundary = pending.indexOf('\n\n');
+      if (boundary >= 0) {
+        const lines = pending.slice(0, boundary).split('\n');
+        pending = pending.slice(boundary + 2);
+        const data = lines.find((line) => line.startsWith('data:'));
+        if (data && lines.some((line) => line.trim() === 'event: coaches') &&
+            JSON.parse(data.slice(5))[0].places[0].status === status) return;
+      } else {
+        const { value, done } = await reader.read();
+        assert.ok(!done, 'SSE ended before expected seat state');
+        pending += value.replaceAll('\r', '');
+      }
+    }
+  };
 }

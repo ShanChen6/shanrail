@@ -44,6 +44,18 @@ async function bootstrap() {
     throw new Error('API_PORT must be an integer between 1 and 65535');
   }
   const app = await NestFactory.create(AppModule);
+  if (process.env.SHANRAIL_REQUEST_LOG === '1') {
+    app.use((req: { method: string; route?: { path: string } }, res: {
+      statusCode: number; once(event: string, listener: () => void): void;
+    }, next: () => void) => {
+      const started = performance.now();
+      res.once('finish', () => console.log(JSON.stringify({
+        method: req.method, route: req.route?.path ?? 'unmatched', status: res.statusCode,
+        durationMs: Math.round(performance.now() - started),
+      })));
+      next();
+    });
+  }
   app.enableShutdownHooks();
   await app.listen(port, process.env.API_HOST ?? '127.0.0.1');
 }

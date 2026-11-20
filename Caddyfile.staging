@@ -1,0 +1,10 @@
+{$STAGING_HOST} {
+	handle_path /rail-api/* {
+		reverse_proxy api:3001 {
+			flush_interval -1
+		}
+	}
+	handle {
+		reverse_proxy web:3000
+	}
+}

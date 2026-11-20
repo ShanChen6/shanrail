@@ -34,6 +34,20 @@ export default function CoachMap({ path }: { path: string }) {
     return () => window.clearInterval(timer);
   }, [hold]);
 
+  useEffect(() => {
+    if (!open) return;
+    const events = new EventSource(pathname + '/events?' + query);
+    events.addEventListener('coaches', (event: MessageEvent<string>) => {
+      const snapshot: Coach[] = JSON.parse(event.data);
+      setCoaches(snapshot);
+      setError(false);
+      setPicks((current) => current.filter(({ coachNumber, label }) => snapshot.some((coach) =>
+        coach.number === coachNumber && coach.places.some((place) =>
+          place.label === label && place.status === 'AVAILABLE'))));
+    });
+    return () => events.close();
+  }, [open, pathname, query]);
+
   function clearHold() {
     sessionStorage.removeItem(storageKey);
     setHold(null);
